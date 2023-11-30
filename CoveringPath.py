@@ -1,6 +1,8 @@
 import math
 import fractions as fr
 import time
+from itertools import islice
+import multiprocessing
 
 
 def dot(u, v):
@@ -42,19 +44,18 @@ def grid(files, rows, cols = 0):
             grid.append((fr.Fraction(file), fr.Fraction(row), fr.Fraction(0.0)))
     return grid
 
-def possiblePoints_fnc(grid): #Computing intersection points between each pair of lines (very slow due to nested loops, working on optimizations and multiprocessing implementation)
+def possiblePoints_fnc(grid, lock, intersectionPoints = [], currentProcess = 0, nProcesses = 1):
+    #Computing intersection points between each pair of lines (very slow due to nested loops)
     #Checking every possible path through these points only, will always find the shortest path!
-    intersectionPoints = []
-    for i, p1 in enumerate(grid):
+    slicedGrid = islice(grid, currentProcess, len(grid), nProcesses)
+    for i, p1 in enumerate(slicedGrid):
         for p2 in grid[i+1:]:
             for j, q1 in enumerate(grid):
                 for q2 in grid[j+1:]:
                     intersectionPoint = lineIntersection((p1, p2), (q1, q2))
                     if intersectionPoint is not None and len(intersectionPoint) == 3:
-                        intersectionPoints.append(tuple(intersectionPoint))
-    unique_intersection_points = list(set(intersectionPoints))
-
-    return unique_intersection_points
+                        with lock: #Minimizing risk for race conditions to happen
+                            intersectionPoints.append(tuple(intersectionPoint))
 
 def startingPoints_fnc(possiblePoints):
     filesCoords, rowsCoords, colsCoords = zip(*possiblePoints)
@@ -92,7 +93,22 @@ def startingPoints_fnc(possiblePoints):
 def main():
     start_time = time.time()
     freePoints = grid(3, 3)
-    possiblePoints = possiblePoints_fnc(freePoints) #possiblePoints computation may be very slow and a little taxing on system memory when grid is "large" and/or 3D!
+    
+    manager = multiprocessing.Manager()
+    possiblePointsShared = manager.list()
+    lock = manager.Lock()
+    nProcesses, activeProcesses = 10, [] #Set max number of concurrently active processes (default 10 based on a 6Core/12Threads CPU)
+    if nProcesses > len(freePoints):
+        nProcesses = len(freePoints)
+    for i in range(0, nProcesses):
+        #possiblePoints computation may be very slow and a little taxing on system memory when grid is "large" and/or 3D!
+        process = multiprocessing.Process(target=possiblePoints_fnc, args=(freePoints, lock, possiblePointsShared, i, nProcesses))
+        activeProcesses.append(process)
+        process.start()
+    for process in activeProcesses:
+        process.join()
+    possiblePoints = list(set(possiblePointsShared))
+    
     startingPoints = startingPoints_fnc(possiblePoints)
     end_time = time.time()
     print("Len possiblePoints: " + str(len(possiblePoints)))
