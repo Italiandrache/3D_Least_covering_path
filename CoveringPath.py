@@ -91,7 +91,7 @@ def main():
     start_time = time.time()
     freePoints = grid(3, 3)
     
-    manager = mp.multiprocessing.Manager()
+    manager = mp.Manager()
     possiblePointsShared = manager.list()
     lock = manager.Lock()
     nProcesses, activeProcesses = 10, [] #Set max number of concurrently active processes (default 10 based on a 6Core/12Threads CPU)
@@ -100,7 +100,7 @@ def main():
         nProcesses = len(linesCombinations)
     for i in range(0, nProcesses):
         #possiblePoints computation may be very slow and a little taxing on system memory when grid is "large" and/or 3D!
-        process = mp.multiprocessing.Process(target=possiblePoints_fnc, args=(linesCombinations, lock, possiblePointsShared, i, nProcesses))
+        process = mp.Process(target=possiblePoints_fnc, args=(linesCombinations, lock, possiblePointsShared, i, nProcesses))
         activeProcesses.append(process)
         process.start()
     for process in activeProcesses:
