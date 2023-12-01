@@ -45,7 +45,7 @@ def grid(files, rows, cols = 0):
     return grid
 
 def possiblePoints_fnc(linesCombinations, lock, intersectionPoints, currentProcess, nProcesses):
-    #Computing intersection points between each pair of lines (very slow due to nested loops)
+    #Computing intersection points between each pair of lines
     #Checking every possible path through these points only, will always find the shortest path!
     slicedLinesCombinations = it.islice(linesCombinations, currentProcess, len(linesCombinations), nProcesses)
     for (p1, p2), (q1, q2) in slicedLinesCombinations:
