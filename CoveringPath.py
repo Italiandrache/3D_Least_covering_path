@@ -1,8 +1,8 @@
 import math
 import fractions as fr
 import time
-from itertools import islice
-import multiprocessing
+import itertools as it
+import multiprocessing as mp
 
 
 def dot(u, v):
@@ -44,18 +44,15 @@ def grid(files, rows, cols = 0):
             grid.append((fr.Fraction(file), fr.Fraction(row), fr.Fraction(0.0)))
     return grid
 
-def possiblePoints_fnc(grid, lock, intersectionPoints = [], currentProcess = 0, nProcesses = 1):
+def possiblePoints_fnc(linesCombinations, lock, intersectionPoints, currentProcess, nProcesses):
     #Computing intersection points between each pair of lines (very slow due to nested loops)
     #Checking every possible path through these points only, will always find the shortest path!
-    slicedGrid = islice(grid, currentProcess, len(grid), nProcesses)
-    for i, p1 in enumerate(slicedGrid):
-        for p2 in grid[i+1:]:
-            for j, q1 in enumerate(grid):
-                for q2 in grid[j+1:]:
-                    intersectionPoint = lineIntersection((p1, p2), (q1, q2))
-                    if intersectionPoint is not None and len(intersectionPoint) == 3:
-                        with lock: #Minimizing risk for race conditions to happen
-                            intersectionPoints.append(tuple(intersectionPoint))
+    slicedLinesCombinations = it.islice(linesCombinations, currentProcess, len(linesCombinations), nProcesses)
+    for (p1, p2), (q1, q2) in slicedLinesCombinations:
+        intersection_point = lineIntersection((p1, p2), (q1, q2))
+        if intersection_point is not None and len(intersection_point) == 3:
+            with lock: #Minimizing risk for race conditions to happen
+                intersectionPoints.append(tuple(intersection_point))
 
 def startingPoints_fnc(possiblePoints):
     filesCoords, rowsCoords, colsCoords = zip(*possiblePoints)
@@ -94,15 +91,16 @@ def main():
     start_time = time.time()
     freePoints = grid(3, 3)
     
-    manager = multiprocessing.Manager()
+    manager = mp.multiprocessing.Manager()
     possiblePointsShared = manager.list()
     lock = manager.Lock()
     nProcesses, activeProcesses = 10, [] #Set max number of concurrently active processes (default 10 based on a 6Core/12Threads CPU)
-    if nProcesses > len(freePoints):
-        nProcesses = len(freePoints)
+    linesCombinations = list(it.combinations(it.combinations(freePoints, 2), 2)) #efficient way to get a list of all possible unique pairs of line segments in a grid. Could maybe be further optimized by removing unnecessary parallel line segments and exploiting symmetries.
+    if nProcesses > len(linesCombinations): #safety check for very small grids and powerful cpus
+        nProcesses = len(linesCombinations)
     for i in range(0, nProcesses):
         #possiblePoints computation may be very slow and a little taxing on system memory when grid is "large" and/or 3D!
-        process = multiprocessing.Process(target=possiblePoints_fnc, args=(freePoints, lock, possiblePointsShared, i, nProcesses))
+        process = mp.multiprocessing.Process(target=possiblePoints_fnc, args=(linesCombinations, lock, possiblePointsShared, i, nProcesses))
         activeProcesses.append(process)
         process.start()
     for process in activeProcesses:
