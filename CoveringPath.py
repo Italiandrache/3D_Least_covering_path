@@ -1,9 +1,20 @@
 import math
 import fractions as fr
-import time
 import itertools as it
 import multiprocessing as mp
+import time #optional, for benchmarking only
 
+
+def grid_fnc(files, rows, cols = 0):
+    grid = []
+    for file in range(files):
+        for row in range(rows):
+            if cols != 0:
+                for col in range(cols):
+                    grid.append((fr.Fraction(file), fr.Fraction(row), fr.Fraction(col))) #Fractions are used in order to have accurate results. Lines from grid only have rational coefficients
+                continue
+            grid.append((fr.Fraction(file), fr.Fraction(row), fr.Fraction(0.0)))
+    return grid
 
 def dot(u, v):
     return u[0] * v[0] + u[1] * v[1] + u[2] * v[2]
@@ -32,27 +43,34 @@ def lineIntersection(a, b): #a=L1(p1, p2) b=L2(q1, q2) #algorithm to compute int
     z = a[0][2] + da[2] * s
     ip = (x, y, z) #intersection point
     return ip
-  
-def grid(files, rows, cols = 0):
-    grid = []
-    for file in range(files):
-        for row in range(rows):
-            if cols != 0:
-                for col in range(cols):
-                    grid.append((fr.Fraction(file), fr.Fraction(row), fr.Fraction(col))) #Fractions are used in order to have accurate results. Lines from grid only have rational coefficients
-                continue
-            grid.append((fr.Fraction(file), fr.Fraction(row), fr.Fraction(0.0)))
-    return grid
 
-def possiblePoints_fnc(linesCombinations, lock, intersectionPoints, currentProcess, nProcesses):
-    #Computing intersection points between each pair of lines
-    #Checking every possible path through these points only, will always find the shortest path!
+def getIntersection(linesCombinations, lock, intersectionPoints, currentProcess, nProcesses):
     slicedLinesCombinations = it.islice(linesCombinations, currentProcess, len(linesCombinations), nProcesses)
     for (p1, p2), (q1, q2) in slicedLinesCombinations:
         intersection_point = lineIntersection((p1, p2), (q1, q2))
         if intersection_point is not None and len(intersection_point) == 3:
             with lock: #Minimizing risk for race conditions to happen
                 intersectionPoints.append(tuple(intersection_point))
+
+def possiblePoints_fnc(freePoints, nProcesses = 10):
+    #Computing intersection points between each pair of lines
+    #Checking every possible path through these points only, will always find the shortest path!
+    linesCombinations = list(it.combinations(it.combinations(freePoints, 2), 2)) #efficient way to get a list of all possible unique pairs of line segments in a grid. Could maybe be further optimized by removing unnecessary parallel line segments and exploiting symmetries.
+    
+    manager = mp.Manager()
+    possiblePointsShared = manager.list()
+    lock = manager.Lock()
+    activeProcesses = [] #Set max number of concurrently active processes (default 10 based on a 6Core/12Threads CPU)
+    if nProcesses > len(linesCombinations): #safety check for very small grids and powerful cpus
+        nProcesses = len(linesCombinations)
+    for i in range(0, nProcesses):
+        #possiblePoints computation may be very slow and a little taxing on system memory when grid is "large" and/or 3D!
+        process = mp.Process(target=getIntersection, args=(linesCombinations, lock, possiblePointsShared, i, nProcesses))
+        activeProcesses.append(process)
+        process.start()
+    for process in activeProcesses:
+        process.join()
+    return list(set(possiblePointsShared))
 
 def startingPoints_fnc(possiblePoints):
     filesCoords, rowsCoords, colsCoords = zip(*possiblePoints)
@@ -89,24 +107,8 @@ def startingPoints_fnc(possiblePoints):
 
 def main():
     start_time = time.time()
-    freePoints = grid(3, 3)
-    
-    manager = mp.Manager()
-    possiblePointsShared = manager.list()
-    lock = manager.Lock()
-    nProcesses, activeProcesses = 10, [] #Set max number of concurrently active processes (default 10 based on a 6Core/12Threads CPU)
-    linesCombinations = list(it.combinations(it.combinations(freePoints, 2), 2)) #efficient way to get a list of all possible unique pairs of line segments in a grid. Could maybe be further optimized by removing unnecessary parallel line segments and exploiting symmetries.
-    if nProcesses > len(linesCombinations): #safety check for very small grids and powerful cpus
-        nProcesses = len(linesCombinations)
-    for i in range(0, nProcesses):
-        #possiblePoints computation may be very slow and a little taxing on system memory when grid is "large" and/or 3D!
-        process = mp.Process(target=possiblePoints_fnc, args=(linesCombinations, lock, possiblePointsShared, i, nProcesses))
-        activeProcesses.append(process)
-        process.start()
-    for process in activeProcesses:
-        process.join()
-    possiblePoints = list(set(possiblePointsShared))
-    
+    freePoints = grid_fnc(3, 3) #4, 4, 4
+    possiblePoints = possiblePoints_fnc(freePoints, 10) #second argument is max number of concurrently active processes
     startingPoints = startingPoints_fnc(possiblePoints)
     end_time = time.time()
     print("Len possiblePoints: " + str(len(possiblePoints)))
