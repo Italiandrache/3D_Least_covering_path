@@ -143,6 +143,7 @@ def read_file(filename, startParameter):
 
 def main():
     startParameters = ((3, 3, 1), 10) # The first tuple defines, in order, the number of files, rows, and cols of the grid. The second value determines the max number of concurrently active processes
+    freePoints, possiblePoints, startingPoints = [], [], []
     pointsAlreadyKnown = read_file("data", startParameters[0])
     if not pointsAlreadyKnown:
         start_time = time.time() #Optional, just for benchmark
