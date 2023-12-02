@@ -6,11 +6,11 @@ import os
 import time #optional, for benchmarking only
 
 
-def grid_fnc(files, rows, cols = 0):
+def grid_fnc(files, rows, cols):
     grid = []
     for file in range(files):
         for row in range(rows):
-            if cols != 0:
+            if cols != 0 and cols != 1:
                 for col in range(cols):
                     grid.append((fr.Fraction(file), fr.Fraction(row), fr.Fraction(col))) #Fractions are used in order to have accurate results. Lines from grid only have rational coefficients
                 continue
@@ -82,7 +82,7 @@ def startingPoints_fnc(possiblePoints):
     xShift, yShift, zShift = filesCoords[0], rowsCoords[0], colsCoords[0]
     #Exploiting symmetries of the possiblePoints grid to reduce the number of possible starting points as much as possible
     #possiblePoints grid symmetries are the same as the symmetries of the regular grid from which they've been computed
-    if cols == 0: #2D Grid
+    if cols == 0 or cols == 1: #2D Grid
         if rows == files: #square
             startingPoints = [point for point in possiblePoints if not point[0]>math.ceil((files+2*xShift)/2-1) and not point[0]<point[1]]
             return startingPoints
