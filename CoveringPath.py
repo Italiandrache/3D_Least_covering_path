@@ -120,7 +120,7 @@ def write_to_file(startParameter, freePoints, possiblePoints, startingPoints):
         file.seek(0) # Move the cursor to the beginning of the file
         content = file.read() # Read the content to check if the file is empty
         if not content: # If the file is empty, write header and add empty line
-            file.write("Some already computed data to sometimes skip preliminary calculations.\n")
+            file.write("Some already computed data to sometimes skip preliminary calculations.\n\n")
         file.seek(0, 2) # Move the cursor to the end of the file
         file.write(gridSize + "\n")
         file.write("Grid Points (" + str(len(freePointsStr)) +"):\n")
@@ -128,7 +128,7 @@ def write_to_file(startParameter, freePoints, possiblePoints, startingPoints):
         file.write("Possible Points (" + str(len(possiblePointsStr)) +"):\n")
         file.write(possiblePoints + "\n")
         file.write("Starting Points (" + str(len(startingPointsStr)) +"):\n")
-        file.write(startingPoints + "\n")
+        file.write(startingPoints + "\n\n")
 
 def read_file(filename, startParameter):
     if not os.path.exists(filename + ".dat"): #check whether data.dat already exists
@@ -142,7 +142,7 @@ def read_file(filename, startParameter):
     return True
 
 def main():
-    startParameters = ((3, 3, 0), 10) # The first tuple defines, in order, the number of files, rows, and cols of the grid. The second value determines the max number of concurrently active processes
+    startParameters = ((3, 3, 1), 10) # The first tuple defines, in order, the number of files, rows, and cols of the grid. The second value determines the max number of concurrently active processes
     pointsAlreadyKnown = read_file("data", startParameters[0])
     if not pointsAlreadyKnown:
         start_time = time.time() #Optional, just for benchmark
