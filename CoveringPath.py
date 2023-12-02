@@ -2,6 +2,7 @@ import math
 import fractions as fr
 import itertools as it
 import multiprocessing as mp
+import os
 import time #optional, for benchmarking only
 
 
@@ -105,16 +106,57 @@ def startingPoints_fnc(possiblePoints):
     startingPoints = [point for point in possiblePoints if not point[0]>math.ceil((files+2*xShift)/2-1) and not point[1]>math.ceil((rows+2*yShift)/2-1) and not point[2]>math.ceil((cols+2*zShift)/2-1)]
     return startingPoints
 
-def main():
-    start_time = time.time()
-    freePoints = grid_fnc(3, 3) #4, 4, 4
-    possiblePoints = possiblePoints_fnc(freePoints, 10) #second argument is max number of concurrently active processes
-    startingPoints = startingPoints_fnc(possiblePoints)
-    end_time = time.time()
-    print("Len possiblePoints: " + str(len(possiblePoints)))
-    print("Len startingPoints: " + str(len(startingPoints)))
-    print("Computation time: " + str(end_time - start_time))
+def write_to_file(startParameter, freePoints, possiblePoints, startingPoints):
+    gridSize = str(startParameter[0]) + "x" + str(startParameter[1]) + "x" + str(startParameter[2])
+    freePointsStr = [(str(item[0]), str(item[1]), str(item[2])) for item in freePoints] #convert each tuple element from Fraction to str
+    freePoints = ','.join(map(str, freePointsStr))  #Convert each tuple to a string and join with commas
+    possiblePointsStr = [(str(item[0]), str(item[1]), str(item[2])) for item in possiblePoints]
+    possiblePoints = ','.join(map(str, possiblePointsStr))
+    startingPointsStr = [(str(item[0]), str(item[1]), str(item[2])) for item in startingPoints]
+    startingPoints = ','.join(map(str, startingPointsStr))
 
+    # Open the file in append mode or create it if it doesn't exist
+    with open("data.dat", "a+") as file:
+        file.seek(0) # Move the cursor to the beginning of the file
+        content = file.read() # Read the content to check if the file is empty
+        if not content: # If the file is empty, write header and add empty line
+            file.write("Some already computed data to sometimes skip preliminary calculations.\n")
+        file.seek(0, 2) # Move the cursor to the end of the file
+        file.write(gridSize + "\n")
+        file.write("Grid Points (" + str(len(freePointsStr)) +"):\n")
+        file.write(freePoints + "\n")
+        file.write("Possible Points (" + str(len(possiblePointsStr)) +"):\n")
+        file.write(possiblePoints + "\n")
+        file.write("Starting Points (" + str(len(startingPointsStr)) +"):\n")
+        file.write(startingPoints + "\n")
+
+def read_file(filename, startParameter):
+    if not os.path.exists(filename + ".dat"): #check whether data.dat already exists
+        return False
+    gridSize = str(startParameter[0]) + "x" + str(startParameter[1]) + "x" + str(startParameter[2])
+    with open(filename + ".dat", "r") as file:
+        file.seek(0)
+        content = file.read()
+        if gridSize not in content:
+            return False
+    return True
+
+def main():
+    startParameters = ((3, 3, 0), 10) # The first tuple defines, in order, the number of files, rows, and cols of the grid. The second value determines the max number of concurrently active processes
+    pointsAlreadyKnown = read_file("data", startParameters[0])
+    if not pointsAlreadyKnown:
+        start_time = time.time() #Optional, just for benchmark
+        freePoints = grid_fnc(startParameters[0][0], startParameters[0][1], startParameters[0][2])
+        possiblePoints = possiblePoints_fnc(freePoints, startParameters[1]) #second argument is max number of concurrently active processes
+        startingPoints = startingPoints_fnc(possiblePoints)
+        end_time = time.time() #Optional, just for benchmark
+        print("Len possiblePoints: " + str(len(possiblePoints))) #Optional, just for benchmark
+        print("Len startingPoints: " + str(len(startingPoints))) #Optional, just for benchmark
+        print("Computation time: " + str(end_time - start_time)) #Optional, just for benchmark
+
+        write_to_file(startParameters[0], freePoints, possiblePoints, startingPoints)
+    else:
+        pass #Wip extract data from file with proper form
 
 if __name__ == '__main__':
     main()
