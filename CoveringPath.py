@@ -109,11 +109,11 @@ def startingPoints_fnc(possiblePoints):
 def write_to_file(startParameter, freePoints, possiblePoints, startingPoints):
     gridSize = str(startParameter[0]) + "x" + str(startParameter[1]) + "x" + str(startParameter[2])
     freePointsStr = [(str(item[0]), str(item[1]), str(item[2])) for item in freePoints] #convert each tuple element from Fraction to str
-    freePoints = ','.join(map(str, freePointsStr))  #Convert each tuple to a string and join with commas
+    freePoints = ';'.join(map(str, freePointsStr))  #Convert each tuple to a string and join with commas
     possiblePointsStr = [(str(item[0]), str(item[1]), str(item[2])) for item in possiblePoints]
-    possiblePoints = ','.join(map(str, possiblePointsStr))
+    possiblePoints = ';'.join(map(str, possiblePointsStr))
     startingPointsStr = [(str(item[0]), str(item[1]), str(item[2])) for item in startingPoints]
-    startingPoints = ','.join(map(str, startingPointsStr))
+    startingPoints = ';'.join(map(str, startingPointsStr))
 
     # Open the file in append mode or create it if it doesn't exist
     with open("data.dat", "a+") as file:
@@ -141,6 +141,26 @@ def read_file(filename, startParameter):
             return False
     return True
 
+def extract_data(filename, startParameter):
+    gridSize = str(startParameter[0]) + "x" + str(startParameter[1]) + "x" + str(startParameter[2]) + "\n"
+    with open(filename + ".dat", 'r') as file:
+        lines = file.readlines()
+
+    #Find the index of the line of correct grid size
+    start_index = lines.index(gridSize)
+
+    #Extract the lines corresponding to Free Points, Possible Points, and Starting Points
+    freePoints_line = lines[start_index + 2].strip()
+    possiblePoints_line = lines[start_index + 4].strip()
+    startingPoints_line = lines[start_index + 6].strip()
+
+    # Convert the lines to lists of tuples of fractions
+    freePoints = [tuple(fr.Fraction(coord_str) for coord_str in point.strip("()").replace("'", "").split(',')) for point in freePoints_line.split(";")]
+    possiblePoints = [tuple(fr.Fraction(coord_str) for coord_str in point.strip("()").replace("'", "").split(',')) for point in possiblePoints_line.split(";")]
+    startingPoints = [tuple(fr.Fraction(coord_str) for coord_str in point.strip("()").replace("'", "").split(',')) for point in startingPoints_line.split(";")]
+
+    return freePoints, possiblePoints, startingPoints
+
 def main():
     startParameters = ((3, 3, 1), 10) # The first tuple defines, in order, the number of files, rows, and cols of the grid. The second value determines the max number of concurrently active processes
     freePoints, possiblePoints, startingPoints = [], [], []
@@ -157,7 +177,13 @@ def main():
 
         write_to_file(startParameters[0], freePoints, possiblePoints, startingPoints)
     else:
-        pass #Wip extract data from file with proper form
+        data = extract_data("data", startParameters[0])
+        freePoints = data[0]
+        possiblePoints = data[1]
+        startingPoints = data[2]
+        print(freePoints) #Optional, just for benchmark
+        print(possiblePoints) #Optional, just for benchmark
+        print(startingPoints) #Optional, just for benchmark
 
 if __name__ == '__main__':
     main()
