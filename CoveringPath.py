@@ -16,7 +16,7 @@ def getUpperBound(gridSize):
         return 2*(list[1]-1) #Proven length of least covering path for nxn square grid
     #3D
     if list[0] != list[1]: #Rectangular parallelepiped
-        return 2*list[0]*list[1]-1  #trivial upper bound
+        return 2*list[0]*list[1]-1  #Trivial upper bound
     if list[0] == 2: #2x2x2
         return 6
     return int((files**3-1)/(files-1)+2*(files-3)) #Worst case Ripà's conjecture for nxnxn with n>=3
