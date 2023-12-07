@@ -5,22 +5,26 @@ import time #optional, for benchmarking only
 
 def getUpperBound(gridSize):
     files, rows, cols = gridSize[0], gridSize[1], gridSize[2]
-    if files != rows or files != cols or rows != cols: #not files == rows == cols: #Non square/cubic grid
-        #trivial upper bound
-        list = sorted([files, rows, cols])
-        return 2*list[0]*list[1]-1
-    #square/cubic grids
-    if files == 1 and rows == 1 and cols == 1: #1D
+    if files == 1 and rows == 1 and cols == 1: #0D
         return 1
-    if files == 1 or rows == 1 or cols == 1: #2D
+    if (files == 1 and rows == 1 and cols != 1) or (files == 1 and cols == 1 and rows != 1) or (rows == 1 and cols == 1 and files != 1): #1D
+        return 1
+    #2D
+    if (files != rows and cols == 1) or (files != cols and rows == 1) or (rows != cols and files == 1): #Rectangle
         list = sorted([files, rows, cols])
-        if list[1] == 2:
-            return 3
-        return 2*(list[1]-1) #proven exact bound (lower==upper) for nxnx1 (or nx1xn or 1xnxn) grids, with n>=3
-    if files == 2:
+        return 2*list[1]-1  #trivial upper bound
+    if (files == 2 and rows == 2 and cols == 1) or (files == 2 and cols == 2 and rows == 1) or (rows == 2 and cols == 2 and files == 1): #2x2 square grid
+        return 3
+    if (files == rows and cols == 1) or (files == cols and rows == 1) or (rows == cols and files == 1): #nxn square grid, with n>=3
+        list = sorted([files, rows, cols])
+        return 2*(list[1]-1)
+    #3D
+    if files != rows or files != cols or rows != cols: #Rectangular parallelepiped
+        list = sorted([files, rows, cols])
+        return 2*list[0]*list[1]-1  #trivial upper bound
+    if files == 2: #2x2x2
         return 6
-    return (files**3-1)/(files-1)+2*(files-3) #Worst case Ripà's conjecture
-
+    return (files**3-1)/(files-1)+2*(files-3) #Worst case Ripà's conjecture for nxnxn
 def leastCoveringPath(freePoints, possiblePoints, startingPoints, upperBound, lock, currentProcess, nProcesses):
     pass
 
