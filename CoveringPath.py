@@ -19,7 +19,7 @@ def getUpperBound(gridSize):
         return 2*(list[1]-1) #proven exact bound (lower==upper) for nxnx1 (or nx1xn or 1xnxn) grids, with n>=3
     if files == 2:
         return 6
-    return (files**3-1)/(files-1)+2*(files-3) #Worse case Ripà's conjecture
+    return (files**3-1)/(files-1)+2*(files-3) #Worst case Ripà's conjecture
 
 def leastCoveringPath(freePoints, possiblePoints, startingPoints, upperBound, lock, currentProcess, nProcesses):
     pass
