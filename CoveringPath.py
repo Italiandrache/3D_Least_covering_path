@@ -11,7 +11,7 @@ def getUpperBound(gridSize):
     if list[0] == 1: #2D
         if list [1] != list[2]: #Rectangle
             return 2*list[1]-1 #Trivial upper bound
-        if list[1] == 2:
+        if list[1] == 2: #2x2
             return 3
         return 2*(list[1]-1) #Proven length of least covering path for nxn square grid
     #3D
@@ -19,7 +19,7 @@ def getUpperBound(gridSize):
         return 2*list[0]*list[1]-1  #trivial upper bound
     if list[0] == 2: #2x2x2
         return 6
-    return (files**3-1)/(files-1)+2*(files-3) #Worst case Ripà's conjecture for nxnxn
+    return (files**3-1)/(files-1)+2*(files-3) #Worst case Ripà's conjecture for nxnxn with n>=3
 
 def leastCoveringPath(freePoints, possiblePoints, startingPoints, upperBound, lock, currentProcess, nProcesses):
     pass
